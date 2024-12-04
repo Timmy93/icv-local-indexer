@@ -1,6 +1,7 @@
 import logging
 import os
 import pickle
+import time
 
 import requests
 
@@ -8,6 +9,8 @@ import requests
 class SessionHandler:
 
     session_file = os.path.join('Config', 'session_file')
+    last_request = None
+    minimum_pause = 1.5
 
     def __init__(self):
         self.session = requests.Session()
@@ -22,7 +25,12 @@ class SessionHandler:
         :param url: The URL to fetch
         :return: The HTML content as string
         """
+        if self.last_request and time.time() - self.last_request < self.minimum_pause:
+            print("Waiting...")
+            time.sleep(self.minimum_pause - (time.time() - self.last_request))
+        self.last_request = time.time()
         try:
+            print(f"Fetching: {url}")
             response = self.session.get(url)
             response.raise_for_status()
             return response.text
@@ -34,7 +42,7 @@ class SessionHandler:
     def _setup_session(self):
         self.session.headers.update({
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
-            "Accept-Encoding": "gzip, deflate",
+            "Accept-Encoding": "gzip, deflate, br",
         })
         self._restore_session()
 

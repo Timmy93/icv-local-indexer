@@ -1,5 +1,6 @@
 import locale
 import os.path
+import time
 import tomllib
 import logging
 from ICV import ICV
@@ -31,9 +32,30 @@ analyzer = ICV(
     config['Credential']['username'],
     config['Credential']['password']
 )
+board_id = "9"
+title_list_id = "45246"
+post_id = "135245"
+
 try:
-    posts = analyzer.get_last_updates("9")
-    print(posts)
+    # start_time = time.time()
+    # title_list_ids = analyzer.get_list_title_list(board_id)
+    # posts = analyzer.get_last_updates(board_id)
+    # print(f"Extracted {len(posts)} updates - Found {len(title_list_ids)} title lists")
+    # execution_time = time.time() - start_time
+    # start_time = time.time()
+    # print(f"Post retrival in: {execution_time} seconds")
+    # print("---------------------")
+    # list_info = analyzer.get_list_info(title_list_id)
+    # execution_time = time.time() - start_time
+    # start_time = time.time()
+    # print(f"Extracted a list of {len(list_info)} retrival time: {execution_time} seconds")
+    # print("---------------------")
+    #Estrai le info --> get_info
+    start_time = time.time()
+    post_info = analyzer.get_post_info(post_id)
+    print(f"Post info: {post_info}")
+    print(f"Extracted post info in: {time.time() - start_time} seconds")
+    print("---------------------")
 except ValueError as e:
     print(f"Errore: {e}")
     logging.error(f"Errore: {e}")
