@@ -4,6 +4,7 @@ import time
 import logging
 from datetime import datetime
 
+from AvinapticParser import AvinapticParser
 from Parsers.IcvParser import IcvParser, LoginError
 
 
@@ -40,10 +41,15 @@ class IcvPostParser(IcvParser):
             self.messages = self._extract_messages(post)
             if self.messages:
                 # Get info only from first message
-                post_info = {}
                 message = self.messages[0]
+                post_info = {
+                    'id': self.topic_id,
+                    'message_id': self._get_msg_id(message),
+                }
                 self._extract_lateral_bar(message, post_info)
                 self._extract_info(message, post_info)
+                self._search_report(message, post_info)
+                self._search_magnet(message, post_info)
                 return post_info
         else:
             return None
@@ -75,3 +81,54 @@ class IcvPostParser(IcvParser):
 
     def _extract_messages(self, post):
         return post.find_all('div', class_='windowbg')
+
+    def _search_report(self, message, post_info):
+        report_div = message.find(lambda tag: tag.name == 'details' and r"Info sul file" in tag.get_text())
+        if report_div:
+            spoiler_content = report_div.find('div', class_='spoiler_content')
+            if spoiler_content:
+                for br in spoiler_content.find_all("br"):
+                    br.replace_with("\n")
+                post_info['report'] = spoiler_content.get_text(strip=True, separator = '\n',)
+            else:
+                post_info['report'] = report_div.get_text(strip=True)
+        else:
+            post_info['report'] = None
+            print("No report found")
+        if post_info['report']:
+            ap = AvinapticParser(post_info['report'])
+            post_info['report'] = ap.get_summary()
+
+    def _search_magnet(self, message, post_info):
+        if self.is_thank_button_clicked(message, post_info):
+            self.get_magnet_already_thanked(message, post_info)
+        else:
+            self.thank_and_get_magnet(self.topic_id, post_info['message_id'], post_info['creator_profile'])
+
+    def thank_and_get_magnet(self, topic_id, message_id, member_id):
+        """
+        Send the thanks request and get the magnet link from the response
+        :param topic_id: The topic where there is the message to thank
+        :param message_id: The message to thank
+        :param member_id: The user that send the message
+        :return: The magnet link as list of objects
+        """
+        button_url = self.home_url + f"action=thank;msg={message_id};member={member_id};topic={topic_id};refresh=1;ajax=1;xml=1"
+        print(f"Thank getting this page: {button_url}")
+
+    def get_magnet_already_thanked(self, message, post_info):
+        pass
+
+    def is_thank_button_clicked(self, message, post_info):
+        """
+        Verifica se il pulsante "Ringrazia" è presente.
+        Controlla se è visibile l'elemento <span class="saythanks_label">Ringrazia</span>.
+        """
+        thank_button = message.find('span', {'class': 'saythanks_label'}, string="Ringrazia")
+        return not thank_button
+
+    def _get_msg_id(self, message):
+        if not message:
+            return None
+        else:
+            return int(message['id'].split('msg')[-1]) if message and 'id' in message.attrs else None

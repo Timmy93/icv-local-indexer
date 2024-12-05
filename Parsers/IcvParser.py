@@ -9,7 +9,7 @@ class LoginError(Exception):
 
 class IcvParser:
 
-    home_url = "https://www.icv-crew.com/forum/"
+    home_url = "https://www.icv-crew.com/forum/index.php"
 
     def __init__(self, session_handler):
         self.session_handler = session_handler
