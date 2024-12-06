@@ -34,7 +34,7 @@ analyzer = ICV(
 )
 board_id = "9"
 title_list_id = "45246"
-post_id = "135245"
+post_ids = ["135245", "198538", "111972"]
 
 try:
     # start_time = time.time()
@@ -50,12 +50,14 @@ try:
     # start_time = time.time()
     # print(f"Extracted a list of {len(list_info)} retrival time: {execution_time} seconds")
     # print("---------------------")
+
     #Estrai le info --> get_info
-    start_time = time.time()
-    post_info = analyzer.get_post_info(post_id)
-    print(f"Post info: {post_info}")
-    print(f"Extracted post info in: {time.time() - start_time} seconds")
-    print("---------------------")
+    for post_id in post_ids:
+        start_time = time.time()
+        post_info = analyzer.get_post_info(post_id)
+        print(f"Post info: {post_info}")
+        print(f"Extracted post info in: {time.time() - start_time} seconds")
+        print("---------------------")
 except ValueError as e:
     print(f"Errore: {e}")
     logging.error(f"Errore: {e}")

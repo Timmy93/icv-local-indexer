@@ -1,4 +1,8 @@
+# Scraping requirements
 beautifulsoup4
 requests
-logging
 brotli
+# Logging requirements
+logging
+# Database requirements
+mysql-connector-python

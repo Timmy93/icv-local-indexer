@@ -60,6 +60,9 @@ class IcvParser:
             return url.split('=')[-1].split('.')[0]
         return None
 
+    @staticmethod
+    def get_board_id(url):
+        return IcvParser.get_post_id(url)
 
     @staticmethod
     def get_user_id(url):

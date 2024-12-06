@@ -1,6 +1,5 @@
 import datetime
 import logging
-import time
 
 from Parsers.IcvBoardParser import IcvBoardParser
 from Parsers.IcvLoginParser import IcvLoginParser
@@ -11,8 +10,9 @@ from SessionHandler import SessionHandler
 
 
 class ICV:
-
+    # La lista di tutte le board [board_id] -> {last_update, pages, update_time}
     board_info = {}
+    # La lista di tutti i titoli [post_id] -> {board_id}
     title_list = {}
     minimum_wait_hours = 6
 
@@ -42,22 +42,6 @@ class ICV:
                 "update_time": datetime.datetime.now(),
             }
         return updates
-
-    def parse_list_info(self, post_id):
-        """
-        Extract the list info from the specified post id
-        :param post_id: The id of the title list post
-        :return:
-        """
-        icv_tl = IcvTitleListParser(self.session_handler, post_id)
-        for update in updates:
-            if update["type"] == "title_list":
-                if update["id"] not in self.title_list:
-                    self.title_list[update["id"]] = {
-                        "board_id": update["board_id"],
-                        "list": [],
-                        "last_update": None,
-                    }
 
     def _get_updates(self, board_id):
         """
@@ -91,24 +75,20 @@ class ICV:
         title_list = icv_tl.extract_list()
         return title_list
 
-    def get_list_title_list(self, board_id):
-        """
-        Get the list of title list from the specified board
-        :param board_id: The board id
-        :return: The list of title list
-        """
-        title_list_id = []
-        update_list = self.get_last_updates(board_id)
-        for topic in update_list:
-            if topic["type"] == "title_list":
-                title_list_id.append(topic["id"])
-        return title_list_id
-
     def get_post_info(self, post_id):
         """
         Get the info of the post
         :param post_id: The id of the post
         :return: The info of the post
         """
-        icv_p = IcvPostParser(self.session_handler, post_id)
-        return icv_p.get_info()
+        try:
+            icv_p = IcvPostParser(self.session_handler, post_id)
+            info = icv_p.get_info()
+            self.title_list[post_id] = info["board_id"]
+            self.board_info[info["board_id"]] = info
+            return info
+        except Exception as e:
+            print(f"Error: {e} - Cannot extract info from post {post_id}")
+            logging.error(f"Error: {e} - Cannot extract info from post {post_id}")
+            return None
+

@@ -4,6 +4,8 @@ import time
 import logging
 from datetime import datetime
 
+from bs4 import BeautifulSoup
+
 from AvinapticParser import AvinapticParser
 from Parsers.IcvParser import IcvParser, LoginError
 
@@ -46,6 +48,7 @@ class IcvPostParser(IcvParser):
                     'id': self.topic_id,
                     'message_id': self._get_msg_id(message),
                 }
+                self._extract_board_info(post_info)
                 self._extract_lateral_bar(message, post_info)
                 self._extract_info(message, post_info)
                 self._search_report(message, post_info)
@@ -53,6 +56,14 @@ class IcvPostParser(IcvParser):
                 return post_info
         else:
             return None
+
+    def _extract_board_info(self, post_info):
+        board_info = self.page.find('div', class_='navigate_section')
+        if board_info:
+            sections = board_info.find_all('li')
+            if sections and len(sections) > 2:
+                post_info['board'] = sections[-2].find('a').get_text()
+                post_info['board_id'] = IcvParser.get_board_id(sections[-2].find('a')['href'])
 
     def _extract_lateral_bar(self, message, post_info):
         lateral_bar = message.find('div', class_='poster')
@@ -100,24 +111,54 @@ class IcvPostParser(IcvParser):
             post_info['report'] = ap.get_summary()
 
     def _search_magnet(self, message, post_info):
-        if self.is_thank_button_clicked(message, post_info):
-            self.get_magnet_already_thanked(message, post_info)
+        """
+        Extract the magnet links from the first message of this post
+        :param message:
+        :param post_info:
+        :return:
+        """
+        if not self.is_thank_button_clicked(message, post_info):
+            self.thank_and_get_magnet(post_info)
         else:
-            self.thank_and_get_magnet(self.topic_id, post_info['message_id'], post_info['creator_profile'])
+            self.get_magnet_already_thanked(message, post_info)
 
-    def thank_and_get_magnet(self, topic_id, message_id, member_id):
+
+    def thank_and_get_magnet(self, post_info):
         """
         Send the thanks request and get the magnet link from the response
-        :param topic_id: The topic where there is the message to thank
-        :param message_id: The message to thank
-        :param member_id: The user that send the message
+        :param post_info: The dictionary where to store the information
         :return: The magnet link as list of objects
         """
-        button_url = self.home_url + f"action=thank;msg={message_id};member={member_id};topic={topic_id};refresh=1;ajax=1;xml=1"
-        print(f"Thank getting this page: {button_url}")
+        button_url = self.home_url + f"?action=thank;msg={post_info['message_id']};member={post_info['creator_profile']};topic={post_info['id']};refresh=1;ajax=1;xml=1"
+        response = self.session_handler.fetch_html(button_url, is_json=True)
+        if response['result'] == 'success':
+            refresh_html = response['refresh']
+            refreshed_page = BeautifulSoup(refresh_html, 'html.parser')
+            self.get_magnet_already_thanked(refreshed_page, post_info)
+            print(f"Post: {post_info['title']} - Message: {post_info['message_id']} of {post_info['creator']} thanked")
+        else:
+            post_info['magnet_links'] = []
+            print(f"Error thanking message post {post_info['title']}")
+            logging.error(f"Error thanking message post {post_info['title']}")
+            raise Exception(f"Error thanking message post {post_info['title']}")
 
     def get_magnet_already_thanked(self, message, post_info):
-        pass
+        """
+         Search all the <a> elements and get the href attribute if is a magnet link
+        :param message: The html code of the message
+        :param post_info: The dictionary where to store the information
+        :return: The magnet link as list of objects
+        """
+        # Search all the a elements and get the href attribute if it starts with "magnet:"
+        magnet_links_a = message.find_all('a', href=re.compile(r'^magnet:'))
+        post_info['magnet_links'] = []
+        for a in magnet_links_a:
+            magnet_info = {
+                'text': a.get_text(),
+                'href': a.get('href')
+            }
+            post_info['magnet_links'].append(magnet_info)
+        print(f"Found {len(post_info['magnet_links'])} magnet links")
 
     def is_thank_button_clicked(self, message, post_info):
         """

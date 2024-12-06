@@ -19,7 +19,7 @@ class SessionHandler:
     def get_session(self):
         return self.session
 
-    def fetch_html(self, url):
+    def fetch_html(self, url, is_json=False):
         """
         The HTML content from the specified URL
         :param url: The URL to fetch
@@ -33,7 +33,10 @@ class SessionHandler:
             print(f"Fetching: {url}")
             response = self.session.get(url)
             response.raise_for_status()
-            return response.text
+            if not is_json:
+                return response.text
+            else:
+                return response.json()
         except requests.RequestException as e:
             print(f"Cannot retrieve the HTML page: {e}")
             logging.warning(f"Cannot retrieve the HTML page: {e}")
