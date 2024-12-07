@@ -56,7 +56,7 @@ class SessionHandler:
                 self.session.cookies.update(pickle.load(file))
             print("Sessione ripristinata")
             logging.info("Sessione ripristinata")
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             logging.info("File sessione non trovato")
         except Exception as e:
             logging.info(f"Errore durante il ripristino della sessione: {e}")

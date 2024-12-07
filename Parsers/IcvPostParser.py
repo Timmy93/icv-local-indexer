@@ -1,7 +1,5 @@
-import re
-import time
-
 import logging
+import re
 from datetime import datetime
 
 from bs4 import BeautifulSoup
@@ -14,8 +12,6 @@ class IcvPostParser(IcvParser):
 
     # The list of all messages
     messages = []
-    # True if magnet from first message are visible
-    already_thanked = False
     # The url of the post
     post_url = None
 
@@ -65,7 +61,8 @@ class IcvPostParser(IcvParser):
                 post_info['board'] = sections[-2].find('a').get_text()
                 post_info['board_id'] = IcvParser.get_board_id(sections[-2].find('a')['href'])
 
-    def _extract_lateral_bar(self, message, post_info):
+    @staticmethod
+    def _extract_lateral_bar(message, post_info):
         lateral_bar = message.find('div', class_='poster')
         if lateral_bar:
             post_info['creator'] = lateral_bar.find('h4').find_all('a')[-1].get_text()
@@ -117,7 +114,7 @@ class IcvPostParser(IcvParser):
         :param post_info:
         :return:
         """
-        if not self.is_thank_button_clicked(message, post_info):
+        if not self.is_thank_button_clicked(message):
             self.thank_and_get_magnet(post_info)
         else:
             self.get_magnet_already_thanked(message, post_info)
@@ -160,7 +157,7 @@ class IcvPostParser(IcvParser):
             post_info['magnet_links'].append(magnet_info)
         print(f"Found {len(post_info['magnet_links'])} magnet links")
 
-    def is_thank_button_clicked(self, message, post_info):
+    def is_thank_button_clicked(self, message):
         """
         Verifica se il pulsante "Ringrazia" è presente.
         Controlla se è visibile l'elemento <span class="saythanks_label">Ringrazia</span>.

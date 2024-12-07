@@ -1,6 +1,7 @@
 import datetime
 import logging
 
+from IcvHomeParser import IcvHomeParser
 from Parsers.IcvBoardParser import IcvBoardParser
 from Parsers.IcvLoginParser import IcvLoginParser
 from Parsers.IcvParser import LoginError
@@ -75,6 +76,19 @@ class ICV:
         title_list = icv_tl.extract_list()
         return title_list
 
+    def get_list_title_list(self, board_id):
+        """
+        Get the list of title list from the specified board
+        :param board_id: The board id
+        :return: The list of title list
+        """
+        title_list_id = []
+        update_list = self.get_last_updates(board_id)
+        for topic in update_list:
+            if topic["type"] == "title_list":
+                title_list_id.append(topic["id"])
+        return title_list_id
+
     def get_post_info(self, post_id):
         """
         Get the info of the post
@@ -92,3 +106,16 @@ class ICV:
             logging.error(f"Error: {e} - Cannot extract info from post {post_id}")
             return None
 
+    def get_boards(self, relevant_boards=None):
+        """
+        Get the list of boards
+        :return: True if the user is logged in
+        """
+        # TODO implement DB
+        icv_h = IcvHomeParser(self.session_handler)
+        extracted_boards = icv_h.get_board_list()
+        if not relevant_boards:
+            print("Extracted all boards")
+            return extracted_boards
+        else:
+            return [board for board in extracted_boards if board in relevant_boards]
