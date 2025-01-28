@@ -24,16 +24,21 @@ class IcvPostParser(IcvParser):
         self.page = new_page
         self.post_url = f"https://www.icv-crew.com/forum/index.php?topic={self.topic_id}.{self._get_page_id()}"
 
-    def get_info(self):
+    def get_info(self, force_thank=False):
         self.get_this_page(self.post_url, True)
         if not self.is_user_logged_in():
             print("Utente non loggato")
             logging.error("Utente non loggato")
             raise LoginError("Utente non loggato")
         else:
-            return self.extract_post_info()
+            return self._extract_post_info(force_thank)
 
-    def extract_post_info(self):
+    def _extract_post_info(self, force_thank):
+        """
+        Extract the information from the first message of this post
+        :param force_thank:
+        :return:
+        """
         post = self.page.find('div', id='forumposts')
         if post:
             self.messages = self._extract_messages(post)
@@ -48,7 +53,7 @@ class IcvPostParser(IcvParser):
                 self._extract_lateral_bar(message, post_info)
                 self._extract_info(message, post_info)
                 self._search_report(message, post_info)
-                self._search_magnet(message, post_info)
+                self._search_magnet(message, post_info, force_thank)
                 return post_info
         else:
             return None
@@ -107,7 +112,7 @@ class IcvPostParser(IcvParser):
             ap = AvinapticParser(post_info['report'])
             post_info['report'] = ap.get_summary()
 
-    def _search_magnet(self, message, post_info):
+    def _search_magnet(self, message, post_info, force_thank):
         """
         Extract the magnet links from the first message of this post
         :param message:
@@ -115,7 +120,10 @@ class IcvPostParser(IcvParser):
         :return:
         """
         if not self.is_thank_button_clicked(message):
-            self.thank_and_get_magnet(post_info)
+            if not force_thank:
+                post_info['magnet_links'] = []
+            else:
+                self.thank_and_get_magnet(post_info)
         else:
             self.get_magnet_already_thanked(message, post_info)
 

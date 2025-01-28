@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+import logging
 from bs4 import BeautifulSoup
 
 
@@ -40,18 +41,29 @@ class IcvParser:
         self.page = BeautifulSoup(html, 'html.parser')
 
 
-    def is_user_logged_in(self, username=None):
+    def is_user_logged_in(self, required_logged_user=None):
         """
         Check if the user is logged in. If the username is provided, check if the correct user is logged.
         """
         self.get_this_page(self.home_url)
         user_element = self.page.find('a', {'id': 'profile_menu_top'})
         if not user_element:
+            # The user is not logged in because the user bar is not present
             return False
-        elif not username:
+        elif not required_logged_user:
+            # The user bar is present and no specific username is requested
             return True
         else:
-            return username not in user_element.get_text()
+            logged_user = user_element.get_text()
+            if required_logged_user in logged_user:
+                return True
+            else:
+                # Clearing session to log in with the required user
+                print(f"User logged in as {logged_user} instead of {required_logged_user} - Logout")
+                logging.info(f"User logged in as {logged_user} instead of {required_logged_user} - Logout")
+                self.session_handler.clear_session()
+                self.get_this_page(self.home_url, force_reload=True)
+                return False
 
 
     @staticmethod

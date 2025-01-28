@@ -61,6 +61,17 @@ class SessionHandler:
         except Exception as e:
             logging.info(f"Errore durante il ripristino della sessione: {e}")
 
+    def _delete_session(self):
+        """Deletes the session file"""
+        try:
+            os.remove(self.session_file)
+            print("Sessione eliminata")
+            logging.info("Sessione eliminata")
+        except FileNotFoundError:
+            logging.info("File sessione non trovato")
+        except Exception as e:
+            logging.info(f"Errore durante l'eliminazione della sessione: {e}")
+
     def save_session(self):
         """
         Stores the session in a file
@@ -69,6 +80,15 @@ class SessionHandler:
         with open(self.session_file, "wb") as file:
             # noinspection PyTypeChecker
             pickle.dump(self.session.cookies, file)
+
+    def clear_session(self):
+        """
+        Clear the session
+        :return:
+        """
+        self._delete_session()
+        self.session = requests.Session()
+        self._setup_session()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         print("Salvo la sessione")

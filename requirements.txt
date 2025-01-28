@@ -5,4 +5,5 @@ brotli
 # Logging requirements
 logging
 # Database requirements
-mysql-connector-python
+sql-alchemy-db
+PyMySQL

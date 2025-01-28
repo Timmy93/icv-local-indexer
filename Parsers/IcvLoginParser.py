@@ -12,16 +12,17 @@ class IcvLoginParser(IcvParser):
 
     def login(self, username: str, password: str) -> bool:
         if self.is_user_logged_in(username):
-            print("Utente già loggato")
             return True
         else:
+            print("Attempting login")
             return self._login(username, password)
 
     def _get_hidden_fields(self):
         form_id = "frmLogin"
         form = self.page.find('form', id=form_id)
         if not form:
-            raise ValueError(f"Form con id '{form_id}' non trovato.")
+            print("Login form non trovato - Sei sicuro di non aver già fatto l'accesso?")
+            raise ValueError(f"Login form con id '{form_id}' non trovato.")
 
         hidden_fields = []
         # Cerca tutti gli input di tipo hidden all'interno del form
@@ -47,11 +48,11 @@ class IcvLoginParser(IcvParser):
             self.html = response.text
             self.page = BeautifulSoup(response.text, 'html.parser')
             if self.is_user_logged_in():
-                print("Login effettuato")
+                print("Login successful")
                 self.session_handler.save_session()
                 return True
             else:
-                print("Login fallito")
+                print("Login failed")
                 return False
 
     def _login(self, username: str, password: str) -> bool:
